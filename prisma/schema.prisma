@@ -1,0 +1,109 @@
+// Configuración de la fuente de datos (base de datos PostgreSQL)
+datasource db {
+  provider = "postgresql"              // Indica que se usará PostgreSQL
+  url      = env("DATABASE_URL")       // La URL de conexión está en una variable de entorno
+}
+
+// Configuración del generador del cliente Prisma (para usar en Node.js)
+generator client {
+  provider = "prisma-client-js"        // Genera un cliente JS para interactuar con la base de datos
+}
+
+//
+// MODELOS DE LA BASE DE DATOS
+//
+
+/// Tabla de roles de usuario (por ejemplo: admin, escuela, voluntario)
+model Role {
+  id    Int     @id @default(autoincrement()) // ID autoincremental
+  name  String  @unique                       // Nombre del rol, único (ej. "admin")
+  users User[]                               // Relación uno-a-muchos con usuarios
+}
+
+/// Representa a un usuario del sistema (puede ser escuela o voluntario)
+model User {
+  id            String   @id @default(uuid())         // ID único generado como UUID
+  name          String                                // Nombre del usuario
+  email         String   @unique                      // Correo electrónico único
+  password_hash String                                // Hash de la contraseña (por seguridad)
+  role_id       Int                                   // ID del rol (llave foránea)
+  role          Role     @relation(fields: [role_id], references: [id]) // Relación con Role
+  volunteer     Volunteer?                            // Si es voluntario, se relaciona con Volunteer
+  school        School?                               // Si es escuela, se relaciona con School
+  created_at    DateTime @default(now())              // Fecha de creación del usuario
+}
+
+/// Representa a un voluntario tecnológico (relación uno a uno con User)
+model Volunteer {
+  id            String       @id @default(uuid())       // ID único generado como UUID
+  user_id       String       @unique                    // ID del usuario asociado
+  specialties   String[]                                // Lista de especialidades (ej. ["IA", "Web"])
+  description   String?                                 // Descripción opcional del voluntario
+  modality      String                                  // Modalidad de enseñanza (ej. "Virtual" o "Presencial")
+  user          User         @relation(fields: [user_id], references: [id]) // Relación con User
+  availability  Availability[]                          // Disponibilidad del voluntario (1:N)
+  projectLinks  VolunteerProject[]                      // Relación con proyectos (N:M a través de tabla intermedia)
+}
+
+/// Representa a una escuela o institución (relación uno a uno con User)
+model School {
+  id             String    @id @default(uuid())         // ID único generado como UUID
+  user_id        String    @unique                      // ID del usuario asociado
+  school_name    String                                 // Nombre de la escuela
+  contact_person String                                 // Persona de contacto
+  phone          String?                                // Teléfono de contacto (opcional)
+  user           User      @relation(fields: [user_id], references: [id]) // Relación con User
+  bookings       Booking[]                              // Relación con reservas realizadas
+}
+
+/// Tabla que representa disponibilidad horaria de un voluntario
+model Availability {
+  id           String     @id @default(uuid())          // ID único
+  volunteer_id String                                   // ID del voluntario
+  date         DateTime                                // Fecha de disponibilidad
+  start_time   DateTime                                // Hora de inicio
+  end_time     DateTime                                // Hora de fin
+  reserved     Boolean    @default(false)              // Indica si está reservada o no
+  volunteer    Volunteer  @relation(fields: [volunteer_id], references: [id]) // Relación con Volunteer
+  booking      Booking?                                // Relación opcional con reserva (Booking)
+}
+
+/// Tabla de reservas: una escuela reserva una hora con un voluntario
+model Booking {
+  id              String       @id @default(uuid())     // ID único
+  school_id       String                                // Escuela que hace la reserva
+  availability_id String       @unique                  // ID de la disponibilidad reservada
+  status          String                                // Estado (ej. "pendiente", "confirmada")
+  class_topic     String?                               // Tema de la clase o charla
+  notes           String?                               // Notas adicionales (opcional)
+  created_at      DateTime     @default(now())          // Fecha de creación
+  school          School       @relation(fields: [school_id], references: [id])      // Relación con School
+  availability    Availability @relation(fields: [availability_id], references: [id])// Relación con Availability
+}
+
+/// Proyectos registrados para vincular voluntarios y experiencias
+model Project {
+  id          String              @id @default(uuid()) // ID único
+  name        String                                    // Nombre del proyecto
+  description String                                    // Descripción del proyecto
+  date        DateTime                                  // Fecha del proyecto
+  startTime   DateTime                                  // Hora de inicio
+  endTime     DateTime                                  // Hora de fin
+  created_at  DateTime           @default(now())        // Fecha de creación
+  volunteers  VolunteerProject[]                        // Relación N:M con voluntarios
+}
+
+/// Tabla intermedia para la relación N:M entre Volunteer y Project
+model VolunteerProject {
+  id           String     @id @default(uuid())          // ID único
+  projectId    String                                  // ID del proyecto
+  volunteerId  String                                  // ID del voluntario
+
+  project      Project    @relation(fields: [projectId], references: [id])    // Relación con Project
+  volunteer    Volunteer  @relation(fields: [volunteerId], references: [id])  // Relación con Volunteer
+
+  @@unique([projectId, volunteerId]) // Asegura que no se repita la combinación voluntario-proyecto
+}
+
+
+
