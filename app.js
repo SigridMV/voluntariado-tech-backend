@@ -20,15 +20,15 @@ const allowedOrigins = [
 // Middlewares globales
 app.use(cors({
   origin: function(origin, callback){
-    if(!origin) return callback(null, true); // permitir solicitudes sin origen (ej. Postman)
-    if(allowedOrigins.indexOf(origin) === -1){
-      const msg = "La política CORS no permite este origen.";
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
+    if (!origin) return callback(null, true); // permitir herramientas como Postman
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("CORS no permitido"), false);
   },
-  credentials: true,  // si usas cookies o auth con credenciales
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
+
 app.use(express.json()); // Permite parsear solicitudes JSON
 
 // Asignación de rutas a sus respectivos controladores
