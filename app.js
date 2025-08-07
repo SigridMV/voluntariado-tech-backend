@@ -18,7 +18,17 @@ const allowedOrigins = [
 ];
 
 // Middlewares globales
-app.use(cors()); // Habilita CORS para permitir solicitudes desde otros orígenes
+app.use(cors({
+  origin: function(origin, callback){
+    if(!origin) return callback(null, true); // permitir solicitudes sin origen (ej. Postman)
+    if(allowedOrigins.indexOf(origin) === -1){
+      const msg = "La política CORS no permite este origen.";
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true,  // si usas cookies o auth con credenciales
+}));
 app.use(express.json()); // Permite parsear solicitudes JSON
 
 // Asignación de rutas a sus respectivos controladores
