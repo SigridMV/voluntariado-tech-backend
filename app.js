@@ -13,6 +13,10 @@ const bookingRoutes = require("./src/routes/bookingRoutes"); // Rutas para reser
 // Creación de la aplicación de Express
 const app = express();
 
+const allowedOrigins = [
+  "https://voluntariado-tech-frontend.onrender.com", 
+];
+
 // Middlewares globales
 app.use(cors()); // Habilita CORS para permitir solicitudes desde otros orígenes
 app.use(express.json()); // Permite parsear solicitudes JSON
