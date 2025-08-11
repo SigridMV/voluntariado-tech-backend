@@ -16,10 +16,10 @@ const projectRoutes = require("./src/routes/projectRoutes.js");
 
 // Middlewares globales
 app.use(cors({
-  origin: 'https://voluntariado-tech-frontend.onrender.com', // URL exacta de tu frontend desplegado
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos permitidos
-  credentials: true // si usas cookies o auth que requiera credenciales
+  origin: ["https://voluntariado-tech-frontend.vercel.app", "http://localhost:5173"],
+  credentials: true
 }));
+
 app.use(express.json()); // Permite parsear solicitudes JSON
 
 // Asignación de rutas a sus respectivos controladores

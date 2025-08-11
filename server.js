@@ -1,5 +1,7 @@
-// Cargar variables de entorno desde el archivo .env
+// Cargar variables de entorn
+// o desde el archivo .env
 require("dotenv").config();
+const cors = require("cors");
 
 // Importar la aplicación configurada desde src/app.js
 const app = require("./app.js");
@@ -9,6 +11,12 @@ const { errorHandler } = require("./src/middleware/errorHandler.js");
 
 // Definir el puerto donde se ejecutará el servidor, usando PORT desde .env o 4000 por defecto
 const PORT = process.env.PORT || 4000;
+
+// Middlewares globales
+app.use(cors({
+  origin: ["https://voluntariado-tech-frontend.vercel.app", "http://localhost:5173"],
+  credentials: true
+}));
 
 // Importar las rutas disponibles en el proyecto
 const availabilityRoutes = require("./src/routes/availabilityRoutes.js");

@@ -45,14 +45,17 @@ const register = async (req, res) => {
 
     // Validación de campos requeridos
     if (!name || !email || !password || !role) {
+      console.error("Error: faltan datos obligatorios", { name, email, password, role });
       return res.status(400).json({ message: "Faltan datos obligatorios" });
     }
 
     if (!isValidEmail(email)) {
+      console.error("Error: email inválido", email);
       return res.status(400).json({ message: "Formato de email inválido" });
     }
 
     if (!isStrongPassword(password)) {
+        console.error("Error: contraseña débil");
       return res.status(400).json({
         message:
           "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número",
@@ -62,12 +65,14 @@ const register = async (req, res) => {
     // Verifica si ya existe un usuario con ese email
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
+      console.error("Error: email ya registrado", email);
       return res.status(400).json({ message: "Email ya registrado" });
     }
 
     // Buscar el rol solicitado
     const roleRecord = await prisma.role.findUnique({ where: { name: role } });
     if (!roleRecord) {
+      console.error("Error: rol inválido", role);
       return res.status(400).json({ message: "Rol inválido" });
     }
 
