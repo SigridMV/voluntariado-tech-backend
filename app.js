@@ -15,7 +15,11 @@ const app = express();
 const projectRoutes = require("./src/routes/projectRoutes.js");
 
 // Middlewares globales
-app.use(cors()); // Habilita CORS para permitir solicitudes desde otros orígenes
+app.use(cors({
+  origin: 'https://voluntariado-tech-frontend.onrender.com', // URL exacta de tu frontend desplegado
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos permitidos
+  credentials: true // si usas cookies o auth que requiera credenciales
+}));
 app.use(express.json()); // Permite parsear solicitudes JSON
 
 // Asignación de rutas a sus respectivos controladores
