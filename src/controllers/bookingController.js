@@ -1,5 +1,3 @@
-// src/controllers/bookingController.js
-
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
@@ -8,60 +6,63 @@ const prisma = new PrismaClient();
 //
 
 /**
- * Crea una nueva reserva para un proyecto.
- * El usuario debe estar autenticado.
- * Evita duplicados por fecha y hora.
+ * Crea una nueva reserva para un slot de disponibilidad.
+ * El usuario debe ser una escuela autenticada.
+ * Valida que la disponibilidad exista y no esté reservada.
  */
 const createBooking = async (req, res) => {
   try {
     const userId = req.user?.id;
-    const { projectId, date, time } = req.body;
 
     if (!userId) {
       return res.status(401).json({ message: "No autorizado" });
     }
 
-    if (!projectId || !date || !time) {
-      return res.status(400).json({ message: "Datos incompletos" });
+    const { availabilityId } = req.body;
+
+    if (!availabilityId) {
+      return res.status(400).json({ message: "Falta availabilityId" });
     }
 
-    // Validar que el proyecto exista
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
+    // Buscar escuela asociada al usuario
+    const school = await prisma.school.findUnique({
+      where: { user_id: userId },
     });
 
-    if (!project) {
-      return res.status(404).json({ message: "Proyecto no encontrado" });
+    if (!school) {
+      return res.status(403).json({ message: "Solo escuelas pueden reservar" });
     }
 
-    // Verificar si ya existe una reserva similar
-    const existingBooking = await prisma.booking.findFirst({
-      where: {
-        userId,
-        projectId,
-        date: new Date(date),
-        time,
-      },
+    // Buscar disponibilidad
+    const availability = await prisma.availability.findUnique({
+      where: { id: availabilityId },
     });
 
-    if (existingBooking) {
-      return res.status(409).json({
-        message:
-          "Ya tienes una reserva para este proyecto en esta fecha y hora",
-      });
+    if (!availability) {
+      return res.status(404).json({ message: "Disponibilidad no encontrada" });
     }
 
-    // Crear la reserva
-    const newBooking = await prisma.booking.create({
+    if (availability.reserved) {
+      return res.status(400).json({ message: "Disponibilidad ya reservada" });
+    }
+
+    // Crear reserva
+    const booking = await prisma.booking.create({
       data: {
-        userId,
-        projectId,
-        date: new Date(date),
-        time,
+        school_id: school.id,
+        availability_id: availabilityId,
+        status: "pendiente",
+        created_at: new Date(),
       },
     });
 
-    res.status(201).json(newBooking);
+    // Marcar disponibilidad como reservada
+    await prisma.availability.update({
+      where: { id: availabilityId },
+      data: { reserved: true },
+    });
+
+    res.status(201).json(booking);
   } catch (error) {
     console.error("Error creando reserva:", error);
     res.status(500).json({ message: "Error al crear reserva" });
@@ -69,12 +70,11 @@ const createBooking = async (req, res) => {
 };
 
 //
-// ─── RESERVAS DEL USUARIO ─────────────────────────────────────────────
+// ─── RESERVAS DEL VOLUNTARIO ───────────────────────────────────────────
 //
 
 /**
- * Devuelve todas las reservas del usuario autenticado.
- * Incluye detalles del proyecto relacionado.
+ * Devuelve las reservas de slots para el voluntario autenticado.
  */
 const getMyBookings = async (req, res) => {
   try {
@@ -84,13 +84,30 @@ const getMyBookings = async (req, res) => {
       return res.status(401).json({ message: "No autorizado" });
     }
 
+    // Obtener el voluntario vinculado al user
+    const volunteer = await prisma.volunteer.findUnique({
+      where: { user_id: userId },
+    });
+
+    if (!volunteer) {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    // Obtener reservas donde la disponibilidad es del voluntario
     const bookings = await prisma.booking.findMany({
-      where: { userId },
+      where: {
+        availability: {
+          volunteer_id: volunteer.id,
+        },
+      },
       include: {
-        project: true,
+        availability: true,
+        school: true,
       },
       orderBy: {
-        date: "asc",
+        availability: {
+          date: "asc",
+        },
       },
     });
 
@@ -106,7 +123,7 @@ const getMyBookings = async (req, res) => {
 //
 
 /**
- * Permite a un usuario cancelar una reserva propia.
+ * Permite cancelar reserva propia.
  */
 const cancelBooking = async (req, res) => {
   try {
@@ -123,11 +140,22 @@ const cancelBooking = async (req, res) => {
       return res.status(404).json({ message: "Reserva no encontrada" });
     }
 
-    if (booking.userId !== userId) {
+    // Verificar que la reserva pertenezca a la escuela o voluntario según el caso
+    // Por simplicidad, asumimos solo escuelas cancelan sus reservas:
+    const school = await prisma.school.findUnique({
+      where: { user_id: userId },
+    });
+    if (!school || booking.school_id !== school.id) {
       return res
         .status(403)
         .json({ message: "No puedes cancelar esta reserva" });
     }
+
+    // Actualizar disponibilidad para poner reserved en false
+    await prisma.availability.update({
+      where: { id: booking.availability_id },
+      data: { reserved: false },
+    });
 
     await prisma.booking.delete({ where: { id } });
 
@@ -137,10 +165,6 @@ const cancelBooking = async (req, res) => {
     res.status(500).json({ message: "Error al cancelar reserva" });
   }
 };
-
-//
-// ─── EXPORTAR FUNCIONES ────────────────────────────────────────────────
-//
 
 module.exports = {
   createBooking,

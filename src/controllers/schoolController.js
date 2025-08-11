@@ -14,7 +14,7 @@ const prisma = new PrismaClient();
 async function getSchoolById(req, res) {
   const { id } = req.params;
 
-  if (req.user.role === "school" && req.user.schoolId !== id) {
+  if (req.user.role === "school" && String(req.user.schoolId) !== String(id)) {
     return res
       .status(403)
       .json({ message: "No autorizado para acceder a esta escuela" });

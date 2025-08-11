@@ -12,23 +12,10 @@ const bookingRoutes = require("./src/routes/bookingRoutes"); // Rutas para reser
 
 // Creación de la aplicación de Express
 const app = express();
-
-const allowedOrigins = [
-  "https://voluntariado-tech-frontend.onrender.com", 
-];
+const projectRoutes = require("./src/routes/projectRoutes.js");
 
 // Middlewares globales
-app.use(cors({
-  origin: function(origin, callback){
-    if (!origin) return callback(null, true); // permitir herramientas como Postman
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error("CORS no permitido"), false);
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
-
+app.use(cors()); // Habilita CORS para permitir solicitudes desde otros orígenes
 app.use(express.json()); // Permite parsear solicitudes JSON
 
 // Asignación de rutas a sus respectivos controladores
@@ -36,6 +23,7 @@ app.use("/api/auth", authRoutes); // Rutas que manejan autenticación
 app.use("/api/users", userRoutes); // Rutas que manejan operaciones sobre usuarios
 app.use("/api/availability", availabilityRoutes); // Rutas para manejar disponibilidad de los voluntarios
 app.use("/api/bookings", bookingRoutes); // Rutas para manejar reservas
+app.use("/api/projects", projectRoutes);
 
 // Ruta base (raíz) para verificar si el servidor está funcionando
 app.get("/", (req, res) => {

@@ -54,6 +54,7 @@ model School {
   phone          String?                                // Teléfono de contacto (opcional)
   user           User      @relation(fields: [user_id], references: [id]) // Relación con User
   bookings       Booking[]                              // Relación con reservas realizadas
+  projects       Project[]
 }
 
 /// Tabla que representa disponibilidad horaria de un voluntario
@@ -83,14 +84,22 @@ model Booking {
 
 /// Proyectos registrados para vincular voluntarios y experiencias
 model Project {
-  id          String              @id @default(uuid()) // ID único
-  name        String                                    // Nombre del proyecto
-  description String                                    // Descripción del proyecto
-  date        DateTime                                  // Fecha del proyecto
-  startTime   DateTime                                  // Hora de inicio
-  endTime     DateTime                                  // Hora de fin
-  created_at  DateTime           @default(now())        // Fecha de creación
-  volunteers  VolunteerProject[]                        // Relación N:M con voluntarios
+  id          String              @id @default(uuid())
+  name        String
+  description String
+  date        DateTime
+  startTime   DateTime
+  endTime     DateTime
+  created_at  DateTime           @default(now())
+
+  school      School              @relation(fields: [schoolId], references: [id])
+  schoolId    String              // FK a School.id
+
+  
+  reservedBy  String?   // Id del voluntario que reservó (opcional)
+  reservedName String?  // Nombre del voluntario (opcional)
+
+  volunteers  VolunteerProject[]
 }
 
 /// Tabla intermedia para la relación N:M entre Volunteer y Project

@@ -69,11 +69,6 @@ const getMyAvailability = async (req, res) => {
 
     if (!volunteer) return res.status(403).json({ message: "No autorizado" });
 
-    const availabilities = await prisma.availability.findMany({
-      where: { volunteer_id: volunteer.id },
-      orderBy: { date: "asc" },
-    });
-
     res.json(availabilities);
   } catch (error) {
     console.error(error);
@@ -186,14 +181,14 @@ const getAvailableSlots = async (req, res) => {
     };
 
     const availabilities = await prisma.availability.findMany({
-      where: availabilityFilters,
+      where: { reserved: false },
       orderBy: [{ date: "asc" }, { start_time: "asc" }],
       include: {
         volunteer: {
           select: {
+            user: { select: { name: true, email: true } },
             specialties: true,
             modality: true,
-            user: { select: { name: true, email: true } },
           },
         },
       },

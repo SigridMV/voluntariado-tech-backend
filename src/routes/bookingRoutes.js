@@ -1,28 +1,20 @@
-// src/routes/bookingRoutes.js
-
 const express = require("express");
 const router = express.Router();
 
-// Controladores para gestionar reservas
-const { createBooking, getMyBookings } = require("../controllers/bookingController");
-
-// Middleware de autenticación para proteger las rutas
+const { createBooking, getMyBookings, cancelBooking } = require("../controllers/bookingController");
 const authMiddleware = require("../middleware/authMiddleware");
+const roleMiddleware = require("../middleware/roleMiddleware");
 
-/**
- * @route   POST /api/bookings
- * @desc    Crear una nueva reserva
- * @access  Privado (requiere autenticación)
- */
-router.post("/", authMiddleware, createBooking);
+// Crear reserva (solo escuelas)
+router.post("/", authMiddleware, roleMiddleware(["school"]), createBooking);
 
-/**
- * @route   GET /api/bookings/my
- * @desc    Obtener todas las reservas del usuario autenticado
- * @access  Privado (requiere autenticación)
- */
 router.get("/my", authMiddleware, getMyBookings);
 
-// Exportar el router para ser usado en app.js
+// Obtener reservas propias (solo voluntarios)
+router.get("/my-bookings", authMiddleware, roleMiddleware(["volunteer"]), getMyBookings);
+
+// Cancelar reserva (solo escuelas)
+router.delete("/:id", authMiddleware, roleMiddleware(["school"]), cancelBooking);
+
 module.exports = router;
 

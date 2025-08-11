@@ -55,5 +55,51 @@ router.get(
   getAvailabilityByVolunteer // Devuelve disponibilidades de un voluntario específico
 );
 
+// Al final de tus imports y rutas existentes
+router.get("/public", async (req, res) => {
+  try {
+    const availabilities = await getAvailableSlotsInternal();
+
+    res.json(availabilities);
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Error al obtener disponibilidades públicas" });
+  }
+});
+
+// Función auxiliar para obtener slots disponibles sin autenticación
+async function getAvailableSlotsInternal() {
+  const { PrismaClient } = require("@prisma/client");
+  const prisma = new PrismaClient();
+
+  // Obtiene disponibilidades no reservadas con datos básicos del voluntario
+  const availabilities = await prisma.availability.findMany({
+    where: { reserved: false },
+    orderBy: [{ date: "asc" }, { start_time: "asc" }],
+    include: {
+      volunteer: {
+        select: {
+          user: { select: { name: true, email: true } },
+          specialties: true,
+          modality: true,
+        },
+      },
+    },
+  });
+
+  return availabilities.map((s) => ({
+    id: s.id,
+    date: s.date.toISOString().split("T")[0],
+    start_time: s.start_time.toISOString(),
+    end_time: s.end_time.toISOString(),
+    volunteer_id: s.volunteer_id,
+    volunteerName: s.volunteer?.user?.name || "Voluntario",
+    specialties: s.volunteer?.specialties || [],
+    modality: s.volunteer?.modality || "",
+  }));
+}
+
 // Exportamos el enrutador para usarlo en app.js o server.js
 module.exports = router;
