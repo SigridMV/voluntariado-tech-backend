@@ -14,8 +14,9 @@ const PORT = process.env.PORT || 4000;
 
 // Middlewares globales
 app.use(cors({
-  origin: ["https://voluntariado-tech-frontend.vercel.app", "http://localhost:5173"],
-  credentials: true
+  origin: 'https://voluntariado-tech-frontend.onrender.com', // URL de tu frontend
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true, // si usas cookies o auth que dependa de credenciales
 }));
 
 // Importar las rutas disponibles en el proyecto
